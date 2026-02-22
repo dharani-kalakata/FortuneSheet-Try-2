@@ -1,0 +1,50 @@
+{
+  "name": "fortunesheet-json-editor",
+  "displayName": "FortuneSheet JSON Editor",
+  "description": "Opens JSON files in a spreadsheet interface powered by FortuneSheet",
+  "version": "0.0.1",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./src/extension.js",
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "fortunesheet.jsonEditor",
+        "displayName": "FortuneSheet JSON Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.json"
+          }
+        ],
+        "priority": "option"
+      }
+    ]
+  },
+  "scripts": {
+    "build:webview": "webpack --mode production",
+    "watch:webview": "webpack --mode development --watch",
+    "dev:webview": "webpack --mode development"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.0",
+    "@babel/preset-env": "^7.23.0",
+    "@babel/preset-react": "^7.22.0",
+    "babel-loader": "^9.1.3",
+    "css-loader": "^6.8.1",
+    "style-loader": "^3.3.3",
+    "webpack": "^5.88.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "@fortune-sheet/core": "1.0.4",
+    "@fortune-sheet/react": "1.0.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}

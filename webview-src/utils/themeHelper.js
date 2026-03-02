@@ -1,16 +1,21 @@
 /**
  * Injects CSS overrides so FortuneSheet respects VS Code's active theme.
  *
- * FortuneSheet ships with hardcoded white/light colours.  The rules below
- * replace them with VS Code CSS custom properties, which automatically
- * switch between light and dark themes.
+ * FortuneSheet (v1.0.4) is a fork of LuckySheet. It uses a MIX of class names:
+ *   - "fortune-*" — new classes introduced by FortuneSheet
+ *   - "luckysheet-*" — legacy classes kept from LuckySheet
  *
- * Priority: readability > aesthetics.  Every overlay, dropdown, filter panel,
- * and input must have clear foreground/background contrast.
+ * IMPORTANT: Row/column headers render text on <canvas> with hardcoded
+ * fillStyle (#5e5e5e). CSS cannot change canvas text color, so we must
+ * NOT set a dark background on header containers.
+ *
+ * HOW TO TEST: Open DevTools in the webview (Ctrl+Shift+I or via VS Code
+ * command palette "Developer: Open Webview Developer Tools"), inspect any
+ * element, and confirm the class names match what's written here.
  */
 
-const FG  = 'var(--vscode-editor-foreground)';
-const BG  = 'var(--vscode-editor-background)';
+const FG     = 'var(--vscode-editor-foreground)';
+const BG     = 'var(--vscode-editor-background)';
 const INP_BG = 'var(--vscode-input-background, var(--vscode-editor-background))';
 const INP_FG = 'var(--vscode-input-foreground, var(--vscode-editor-foreground))';
 const DD_BG  = 'var(--vscode-dropdown-background, var(--vscode-editor-background))';
@@ -24,86 +29,122 @@ const HDR_BG = 'var(--vscode-editorGroupHeader-tabsBackground, var(--vscode-side
 
 const css = `
 /* ══════════════════════════════════════════════════════════════
-   1. BASE CANVAS
+   1. BASE CONTAINER
    ══════════════════════════════════════════════════════════════ */
-.fortune-sheet-container,
-.luckysheet-sheet-area,
-.luckysheet,
-.luckysheet-cell-main {
+.fortune-sheet-container {
   background: ${BG} !important;
   color: ${FG} !important;
 }
 
 /* ══════════════════════════════════════════════════════════════
-   2. CELLS
+   2. ROW & COLUMN HEADERS — DO NOT STYLE
+   Header text (1,2,3… and A,B,C…) is drawn on <canvas> with
+   hardcoded dark fillStyle (#5e5e5e). Setting a dark background
+   would make the text invisible. Leave defaults intact.
    ══════════════════════════════════════════════════════════════ */
-.luckysheet-cell-flow .luckysheet-cell,
-.luckysheet-cell-flow td,
-.luckysheet-cell-flow .luckysheet-cell .luckysheet-cell-text {
-  color: ${FG} !important;
-}
-.luckysheet-cell-flow .luckysheet-cell {
-  border-color: ${BORDER} !important;
-}
 
 /* ══════════════════════════════════════════════════════════════
-   3. ROW & COLUMN HEADERS
+   3. TOOLBAR
+   Verified: fortune-toolbar, fortune-toolbar-button,
+             fortune-toolbar-combo, fortune-toolbar-combo-text,
+             fortune-toolbar-more-container
    ══════════════════════════════════════════════════════════════ */
-.luckysheet-rows-h,
-.luckysheet-cols-h-cells,
-.luckysheet-rows-h .luckysheet-rows-h-cells,
-.luckysheet-cols-h-cells .luckysheet-cols-h-c {
+.fortune-toolbar {
   background: ${HDR_BG} !important;
   color: ${FG} !important;
   border-color: ${BORDER} !important;
 }
-
-/* ══════════════════════════════════════════════════════════════
-   4. TOOLBAR
-   ══════════════════════════════════════════════════════════════ */
-.fortune-toolbar,
-.luckysheet-wa-editor,
-.luckysheet-toolbar-menu,
-#luckysheet-icon-morebtn-div {
+.fortune-toolbar-button,
+.fortune-toolbar-combo {
+  color: ${FG} !important;
+}
+.fortune-toolbar-button:hover,
+.fortune-toolbar-combo:hover {
+  background-color: ${HOVER} !important;
+}
+.fortune-toolbar-combo-text {
+  color: ${FG} !important;
+}
+.fortune-toolbar-more-container {
   background: ${HDR_BG} !important;
   color: ${FG} !important;
-  border-color: ${BORDER} !important;
-}
-.fortune-toolbar button,
-.fortune-toolbar .luckysheet-toolbar-button,
-.fortune-toolbar select {
-  color: ${FG} !important;
-  background: transparent !important;
-}
-.fortune-toolbar button:hover,
-.fortune-toolbar .luckysheet-toolbar-button:hover {
-  background: ${HOVER} !important;
 }
 .fortune-toolbar svg,
 .fortune-toolbar path {
   fill: ${FG} !important;
 }
 
+/* ── Toolbar dropdown popups (font-size list, format list, etc.) ──
+   Verified: fortune-toolbar-select, fortune-toolbar-select-option,
+             fortune-toolbar-combo-popup                             */
+.fortune-toolbar-select,
+.fortune-toolbar-combo-popup {
+  background: ${DD_BG} !important;
+  color: ${DD_FG} !important;
+  border: 1px solid ${BORDER} !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35) !important;
+}
+.fortune-toolbar-select *,
+.fortune-toolbar-combo-popup * {
+  color: ${DD_FG} !important;
+}
+.fortune-toolbar-select-option:hover {
+  background: ${HOVER} !important;
+}
+
+/* ── Toolbar color picker ──
+   Verified: fortune-toolbar-color-picker */
+.fortune-toolbar-color-picker {
+  background: ${DD_BG} !important;
+  border: 1px solid ${BORDER} !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35) !important;
+}
+.fortune-toolbar-color-picker * {
+  color: ${DD_FG} !important;
+}
+.fortune-change-color,
+.fortune-custom-color {
+  background: ${DD_BG} !important;
+  color: ${DD_FG} !important;
+}
+
 /* ══════════════════════════════════════════════════════════════
-   5. FORMULA BAR
+   4. FORMULA BAR & NAME BOX
+   Verified: fortune-fx-editor, fortune-fx-input,
+             fortune-name-box, #luckysheet-functionbox-cell,
+             #luckysheet-rich-text-editor
    ══════════════════════════════════════════════════════════════ */
-.luckysheet-wa-editor,
-.fortune-formula-bar,
-.luckysheet-formula-bar-input,
+.fortune-fx-editor {
+  background: ${BG} !important;
+  border-color: ${BORDER} !important;
+}
+.fortune-fx-input,
+.fortune-fx-input-container,
 #luckysheet-functionbox-cell,
 #luckysheet-rich-text-editor {
+  background: ${INP_BG} !important;
+  color: ${INP_FG} !important;
+}
+.fortune-fx-icon {
+  color: ${FG} !important;
+}
+.fortune-fx-icon svg,
+.fortune-fx-icon path {
+  fill: ${FG} !important;
+}
+.fortune-name-box,
+.fortune-name-box-container {
   background: ${INP_BG} !important;
   color: ${INP_FG} !important;
   border-color: ${BORDER} !important;
 }
 
 /* ══════════════════════════════════════════════════════════════
-   6. CELL EDITING INPUT
+   5. CELL EDITING INPUT
+   Verified: luckysheet-input-box, luckysheet-cell-input
    ══════════════════════════════════════════════════════════════ */
 .luckysheet-input-box,
-#luckysheet-input-box,
 .luckysheet-input-box textarea,
-#luckysheet-input-box textarea,
 .luckysheet-cell-input,
 #luckysheet-rich-text-editor {
   background: ${INP_BG} !important;
@@ -112,23 +153,8 @@ const css = `
 }
 
 /* ══════════════════════════════════════════════════════════════
-   7. SCROLLBARS
-   ══════════════════════════════════════════════════════════════ */
-.luckysheet-scrollbar-x,
-.luckysheet-scrollbar-y {
-  background: transparent !important;
-}
-.luckysheet-scrollbar-x div,
-.luckysheet-scrollbar-y div {
-  background: var(--vscode-scrollbarSlider-background, rgba(128,128,128,0.4)) !important;
-}
-.luckysheet-scrollbar-x div:hover,
-.luckysheet-scrollbar-y div:hover {
-  background: var(--vscode-scrollbarSlider-hoverBackground, rgba(128,128,128,0.6)) !important;
-}
-
-/* ══════════════════════════════════════════════════════════════
-   8. SELECTION
+   6. SELECTION BORDER
+   Verified: luckysheet-cell-selected
    ══════════════════════════════════════════════════════════════ */
 .luckysheet-cell-selected,
 .luckysheet-cell-selected-focus {
@@ -136,126 +162,102 @@ const css = `
 }
 
 /* ══════════════════════════════════════════════════════════════
-   9. ALL OVERLAYS / DROPDOWNS / POPUPS / CONTEXT MENUS
-   These MUST be clearly readable — this is the most critical
-   section.  Everything gets explicit bg + fg + border.
+   7. SCROLLBARS
+   Verified: luckysheet-scrollbar, luckysheet-scrollbars
    ══════════════════════════════════════════════════════════════ */
-
-/* Container-level overrides */
-.luckysheet-cols-menu,
-.luckysheet-rightclick-menu,
-.luckysheet-filter-menu,
-.luckysheet-filter-byvalue,
-.luckysheet-filter-byvalue-select,
-.luckysheet-cols-menuitem,
-.luckysheet-menuButton,
-.fortune-context-menu,
-.luckysheet-modal-dialog,
-.luckysheet-modal-dialog-content,
-.luckysheet-cell-date-picker,
-.luckysheet-cell-date-picker *,
-.luckysheet-cols-menu ul,
-.luckysheet-rightclick-menu ul {
-  background-color: ${DD_BG} !important;
-  color: ${DD_FG} !important;
-  border-color: ${BORDER} !important;
+.luckysheet-scrollbar,
+.luckysheet-scrollbars {
+  background: transparent !important;
+}
+.luckysheet-scrollbar div,
+.luckysheet-scrollbars div {
+  background: var(--vscode-scrollbarSlider-background, rgba(128,128,128,0.4)) !important;
+}
+.luckysheet-scrollbar div:hover,
+.luckysheet-scrollbars div:hover {
+  background: var(--vscode-scrollbarSlider-hoverBackground, rgba(128,128,128,0.6)) !important;
 }
 
-/* ── Filter panel (the main popup when you click the column arrow) ── */
-.luckysheet-filter-menu {
+/* ══════════════════════════════════════════════════════════════
+   8. CONTEXT MENU & COLUMN MENU
+   Verified: luckysheet-cols-menu, luckysheet-cols-menuitem
+   ══════════════════════════════════════════════════════════════ */
+.luckysheet-cols-menu {
   background-color: ${DD_BG} !important;
   color: ${DD_FG} !important;
   border: 1px solid ${BORDER} !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
 }
-.luckysheet-filter-menu * {
+.luckysheet-cols-menuitem {
   color: ${DD_FG} !important;
 }
-
-/* Sort labels inside filter */
-.luckysheet-filter-menu .luckysheet-filter-sort,
-.luckysheet-filter-menu .luckysheet-filter-sort span,
-.luckysheet-filter-menu .luckysheet-filter-sort div,
-.luckysheet-filter-menu label,
-.luckysheet-filter-menu span {
-  color: ${DD_FG} !important;
-}
-
-/* ── Filter "by value" list (checkboxes) ── */
-.luckysheet-filter-byvalue-list,
-.luckysheet-filter-byvalue-list ul,
-.luckysheet-filter-byvalue-list li {
-  background-color: ${DD_BG} !important;
-  color: ${DD_FG} !important;
-}
-.luckysheet-filter-byvalue-list label,
-.luckysheet-filter-byvalue-list span,
-.luckysheet-filter-byvalue-list input[type="checkbox"] + span {
-  color: ${DD_FG} !important;
-}
-
-/* ── Filter search input ── */
-.luckysheet-filter-byvalue-input input,
-.luckysheet-filter-menu input,
-.luckysheet-filter-byvalue input[type="text"],
-.luckysheet-filter-menu input[type="text"] {
-  background: ${INP_BG} !important;
-  color: ${INP_FG} !important;
-  border: 1px solid ${BORDER} !important;
-  outline: none !important;
-}
-.luckysheet-filter-byvalue-input input:focus,
-.luckysheet-filter-menu input:focus {
-  border-color: ${FOCUS} !important;
-}
-
-/* ── Filter / context-menu buttons ── */
-.luckysheet-filter-menu button,
-.luckysheet-filter-menu .button,
-.luckysheet-filter-menu .luckysheet-filter-initial,
-.luckysheet-filter-menu [class*="btn"] {
-  background: ${BTN_BG} !important;
-  color: ${BTN_FG} !important;
-  border: none !important;
-  cursor: pointer !important;
-}
-.luckysheet-filter-menu button:hover,
-.luckysheet-filter-menu .button:hover {
-  opacity: 0.85 !important;
-}
-
-/* ── Menu items hover ── */
-.luckysheet-cols-menuitem:hover,
-.luckysheet-rightclick-menu .luckysheet-cols-menuitem:hover,
-.fortune-context-menu-item:hover,
-.luckysheet-filter-menu li:hover,
-.luckysheet-filter-byvalue-list li:hover {
+.luckysheet-cols-menuitem:hover {
   background-color: ${HOVER} !important;
 }
-
-/* ── Menu item text (catch-all for nested spans/divs) ── */
-.luckysheet-cols-menuitem *,
-.luckysheet-rightclick-menu *,
-.fortune-context-menu * {
+.luckysheet-cols-menuitem * {
   color: ${DD_FG} !important;
 }
-.luckysheet-cols-menuitem svg,
-.luckysheet-rightclick-menu svg,
-.fortune-context-menu svg {
+.luckysheet-cols-menuitem svg {
   fill: ${DD_FG} !important;
 }
 
 /* ══════════════════════════════════════════════════════════════
-   10. MODAL DIALOGS (general)
+   9. FILTER PANEL
+   Verified: luckysheet-filter-byvalue, fortune-sort
    ══════════════════════════════════════════════════════════════ */
-.luckysheet-modal-dialog {
+.luckysheet-filter-byvalue,
+.luckysheet-filter-byvalue-select {
+  background-color: ${DD_BG} !important;
+  color: ${DD_FG} !important;
+}
+.luckysheet-filter-byvalue *,
+.luckysheet-filter-byvalue-select * {
+  color: ${DD_FG} !important;
+}
+.luckysheet-filter-byvalue input,
+.luckysheet-filter-byvalue-select input {
+  background: ${INP_BG} !important;
+  color: ${INP_FG} !important;
+  border: 1px solid ${BORDER} !important;
+}
+.fortune-byvalue-btn {
+  background: ${BTN_BG} !important;
+  color: ${BTN_FG} !important;
+  border: none !important;
+}
+.fortune-sort {
+  background: ${DD_BG} !important;
+  color: ${DD_FG} !important;
+}
+.fortune-sort * {
+  color: ${DD_FG} !important;
+}
+.fortune-sort-button {
+  background: ${BTN_BG} !important;
+  color: ${BTN_FG} !important;
+}
+[class*="luckysheet-filter-options"] {
+  color: ${FG} !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   10. MODAL DIALOGS
+   Verified: luckysheet-modal-dialog, fortune-dialog
+   ══════════════════════════════════════════════════════════════ */
+.luckysheet-modal-dialog,
+.luckysheet-modal-dialog-content,
+.fortune-dialog,
+.fortune-dialog-box-content {
   background-color: ${DD_BG} !important;
   color: ${DD_FG} !important;
   border: 1px solid ${BORDER} !important;
 }
+.fortune-dialog *,
 .luckysheet-modal-dialog * {
   color: ${DD_FG} !important;
 }
+.fortune-dialog input,
+.fortune-dialog textarea,
+.fortune-dialog select,
 .luckysheet-modal-dialog input,
 .luckysheet-modal-dialog textarea,
 .luckysheet-modal-dialog select {
@@ -263,41 +265,171 @@ const css = `
   color: ${INP_FG} !important;
   border: 1px solid ${BORDER} !important;
 }
-.luckysheet-modal-dialog-button,
-.luckysheet-modal-dialog .btn,
+.fortune-dialog button,
+.fortune-dialog-box-button-container button,
 .luckysheet-modal-dialog button {
   background: ${BTN_BG} !important;
   color: ${BTN_FG} !important;
   border: none !important;
 }
-.luckysheet-modal-dialog-button:hover,
-.luckysheet-modal-dialog .btn:hover,
-.luckysheet-modal-dialog button:hover {
-  opacity: 0.85 !important;
-}
-
-/* ══════════════════════════════════════════════════════════════
-   11. SHEET TAB BAR (hidden but safe override)
-   ══════════════════════════════════════════════════════════════ */
-.luckysheet-sheet-area,
-.luckysheet-sheet-list {
-  background: ${HDR_BG} !important;
-}
-
-/* ══════════════════════════════════════════════════════════════
-   12. MISC – icons inside filter, dropdown arrows, etc.
-   ══════════════════════════════════════════════════════════════ */
-.luckysheet-filter-menu svg,
-.luckysheet-filter-menu path,
+.fortune-dialog svg,
+.fortune-dialog path,
 .luckysheet-modal-dialog svg,
 .luckysheet-modal-dialog path {
   fill: ${DD_FG} !important;
 }
 
-/* Ensure the filter dropdown arrow on column headers is visible */
-.luckysheet-filter-options,
-.luckysheet-filter-options span {
+/* ══════════════════════════════════════════════════════════════
+   11. SEARCH / REPLACE DIALOG
+   Verified: fortune-search-replace
+   ══════════════════════════════════════════════════════════════ */
+.fortune-search-replace {
+  background: ${DD_BG} !important;
+  color: ${DD_FG} !important;
+  border: 1px solid ${BORDER} !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+}
+.fortune-search-replace * {
+  color: ${DD_FG} !important;
+}
+.fortune-search-replace input {
+  background: ${INP_BG} !important;
+  color: ${INP_FG} !important;
+  border: 1px solid ${BORDER} !important;
+}
+.fortune-search-replace input:focus {
+  border-color: ${FOCUS} !important;
+}
+.fortune-search-replace button {
+  background: ${BTN_BG} !important;
+  color: ${BTN_FG} !important;
+  border: none !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   12. SORT MODAL
+   Verified: fortune-sort-modal
+   ══════════════════════════════════════════════════════════════ */
+.fortune-sort-modal {
+  background: ${DD_BG} !important;
+  color: ${DD_FG} !important;
+}
+.fortune-sort-modal * {
+  color: ${DD_FG} !important;
+}
+.fortune-sort-modal select {
+  background: ${INP_BG} !important;
+  color: ${INP_FG} !important;
+  border: 1px solid ${BORDER} !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   13. ZOOM MENU
+   Verified: fortune-zoom-ratio-menu, fortune-zoom-container
+   ══════════════════════════════════════════════════════════════ */
+.fortune-zoom-ratio-menu {
+  background: ${DD_BG} !important;
+  color: ${DD_FG} !important;
+  border: 1px solid ${BORDER} !important;
+}
+.fortune-zoom-ratio-menu * {
+  color: ${DD_FG} !important;
+}
+.fortune-zoom-ratio-item:hover {
+  background: ${HOVER} !important;
+}
+.fortune-zoom-container {
   color: ${FG} !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   14. DATA VERIFICATION / LINK / SPLIT COLUMN PANELS
+   Verified: fortune-data-verification, fortune-link-modify-modal
+   ══════════════════════════════════════════════════════════════ */
+.fortune-data-verification,
+.fortune-link-modify-modal,
+.fortune-split-column,
+.fortune-location-condition {
+  background: ${DD_BG} !important;
+  color: ${DD_FG} !important;
+}
+.fortune-data-verification *,
+.fortune-link-modify-modal *,
+.fortune-split-column *,
+.fortune-location-condition * {
+  color: ${DD_FG} !important;
+}
+.fortune-link-modify-input {
+  background: ${INP_BG} !important;
+  color: ${INP_FG} !important;
+  border: 1px solid ${BORDER} !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   15. SHEET TAB BAR & STAT AREA
+   Verified: luckysheet-sheet-area, fortune-sheettab-container,
+             fortune-stat-area
+   ══════════════════════════════════════════════════════════════ */
+.luckysheet-sheet-area,
+.fortune-sheettab-container {
+  background: ${HDR_BG} !important;
+}
+.fortune-sheet-list-item {
+  color: ${FG} !important;
+}
+.fortune-stat-area {
+  background: ${HDR_BG} !important;
+  color: ${FG} !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   16. BORDER PICKER
+   Verified: fortune-boder-style-picker, fortune-border-select-menu
+   ══════════════════════════════════════════════════════════════ */
+.fortune-boder-style-picker,
+.fortune-border-select-menu,
+.fortune-border-style-picker-menu {
+  background: ${DD_BG} !important;
+  color: ${DD_FG} !important;
+  border: 1px solid ${BORDER} !important;
+}
+.fortune-boder-style-picker *,
+.fortune-border-select-menu *,
+.fortune-border-style-picker-menu * {
+  color: ${DD_FG} !important;
+}
+.fortune-border-select-option:hover {
+  background: ${HOVER} !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   17. FORMULA HELP / SEARCH PANELS
+   Verified: luckysheet-formula-help-c, luckysheet-formula-search-c
+   ══════════════════════════════════════════════════════════════ */
+[class*="luckysheet-formula-help"],
+[class*="luckysheet-formula-search"] {
+  background: ${DD_BG} !important;
+  color: ${DD_FG} !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   18. POPOVER BACKDROP
+   Verified: fortune-popover-backdrop
+   ══════════════════════════════════════════════════════════════ */
+.fortune-popover-backdrop {
+  background: transparent !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   19. GLOBAL SELECT/OPTION FALLBACK
+   ══════════════════════════════════════════════════════════════ */
+select {
+  color: ${DD_FG} !important;
+  background: ${DD_BG} !important;
+}
+select option {
+  color: ${DD_FG} !important;
+  background: ${DD_BG} !important;
 }
 `;
 

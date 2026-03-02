@@ -925,6 +925,44 @@ dist/             # Built webview bundle — regenerated with webpack
 setup.js          # One-time directory creation helper
 ```
 
+---
+
+## 15. Refactoring Report
+
+### 15.1 ThemeHelper Rewrite (`webview-src/utils/themeHelper.js`)
+
+**Problem:** The old themeHelper targeted many dead LuckySheet class names that don't exist in FortuneSheet v1.0.4, while missing real FortuneSheet classes with hardcoded light colors (e.g., `fortune-toolbar-select`, `fortune-dialog`, `fortune-search-replace`).
+
+**Critical discovery — headers use canvas rendering:**
+Row numbers (1, 2, 3…) and column letters (A, B, C…) are drawn on `<canvas>` using `drawRowHeader()` / `drawColHeader()` in `@fortune-sheet/core`. The text color is hardcoded to `#5e5e5e` via `defaultStyle.rowFillStyle`. CSS `color` has no effect on canvas text. Therefore, header containers are intentionally left unstyled — they keep FortuneSheet's default light background so the hardcoded dark text remains readable.
+
+**Why "luckysheet-*" classes still appear:**
+FortuneSheet kept some legacy names: `luckysheet-cols-menu`, `luckysheet-cell-selected`, `luckysheet-input-box`, `luckysheet-scrollbar`, `luckysheet-scrollbars`, `luckysheet-modal-dialog`, `luckysheet-sheet-area`, `luckysheet-filter-byvalue`. These are NOT dead code — they exist in the FortuneSheet v1.0.4 bundle.
+
+**Fix:** Complete rewrite with 19 CSS sections using only verified FortuneSheet classes and VS Code CSS variables. All dropdown/popup containers use `*` child selectors to ensure deeply nested text is themed.
+
+### 15.2 Partial Save (`src/jsonEditorProvider.js`)
+
+**Problem:** All data was written to the document regardless of validation errors.
+
+**Fix:**
+- Added `lastValidJson` — stores last known-good JSON, initialized on document load.
+- Added `mergeValidRows()` — combines new valid rows with old values for invalid rows.
+- Edit handler: validates → merges → only writes valid data to document.
+- Save warning: "X row(s) have validation errors and were NOT saved."
+
+### 15.3 Error Cell Highlighting — Removed
+
+Cell-level highlighting (red text/background on error cells) was attempted but removed because FortuneSheet renders cells on `<canvas>` — changing cell colors requires a full Workbook remount which disrupts the editing experience. See `CELL_COLOR_EXPERIMENTS.md` for approaches to experiment with in the future.
+
+### 15.4 Row Number Fix
+
+Changed display from `err.row + 1` to `err.row + 2` because the spreadsheet's row 1 is the header row.
+
+### 15.5 Dead Code Removed
+
+Removed from themeHelper.js: `luckysheet-cell-flow`, `luckysheet-cell`, `luckysheet-cell-text`, `luckysheet-rows-h`, `luckysheet-cols-h-cells`, `luckysheet-cols-h-c`, `luckysheet-wa-editor`, `luckysheet-toolbar-menu`, `#luckysheet-icon-morebtn-div`, `luckysheet-rightclick-menu`, `luckysheet-menuButton`, `luckysheet-cell-date-picker`, `luckysheet-filter-menu`, `luckysheet-filter-sort`, `luckysheet-filter-byvalue-input`, `luckysheet-filter-byvalue-list`, `luckysheet-filter-initial`, `luckysheet-sheet-list`, `fortune-formula-bar`, `luckysheet-formula-bar-input`, `fortune-context-menu-item`, `luckysheet-modal-dialog-button`
+
 **What IS committed:**
 - All source files in `src/` and `webview-src/`
 - `package.json` and `package-lock.json`

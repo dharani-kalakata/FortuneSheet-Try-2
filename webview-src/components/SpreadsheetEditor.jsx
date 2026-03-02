@@ -6,7 +6,7 @@ import useVscodeMessaging from '../hooks/useVscodeMessaging';
 // Toolbar items — FortuneSheet accepts an array of item keys.
 // We removed "currency-format" and placed "search" in its spot.
 const TOOLBAR_ITEMS = [
-  'undo', 'redo', 'format-painter', 'clear-format', '|',
+  'undo', 'redo', 'search', '|', 'format-painter', 'clear-format', '|',
   'percentage-format', 'number-decrease', 'number-increase', 'format', '|',
   'font', '|',
   'font-size', '|',
@@ -15,7 +15,7 @@ const TOOLBAR_ITEMS = [
   'horizontal-align', 'vertical-align', 'text-wrap', 'text-rotation', '|',
   'freeze', 'conditionFormat', 'filter', 'link', 'image', 'comment',
   'quick-formula', 'dataVerification', 'splitColumn', 'locationCondition',
-  'screenshot', 'search',
+  'screenshot',
 ];
 
 /**
@@ -140,30 +140,30 @@ export default function SpreadsheetEditor() {
 
   return (
     <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Validation error banner — light red, with row + field info */}
+      {/* Validation error banner — uses VS Code theme variables */}
       {validationErrors.length > 0 && (
         <div style={{
           padding: '8px 16px',
-          background: '#5a1d1d',
-          color: '#ffa0a0',
-          borderBottom: '2px solid #be1100',
+          background: 'var(--vscode-inputValidation-errorBackground, #5a1d1d)',
+          color: 'var(--vscode-errorForeground, #f48771)',
+          borderBottom: '2px solid var(--vscode-inputValidation-errorBorder, #be1100)',
           fontSize: 13,
           flexShrink: 0,
           maxHeight: 120,
           overflowY: 'auto',
         }}>
           <div style={{ fontWeight: 'bold', marginBottom: 4 }}>
-            ⚠️ {validationErrors.length} validation error(s) — please fix before saving:
+            ⚠️ {validationErrors.length} validation error(s) — invalid rows were NOT saved:
           </div>
           {validationErrors.map((err, i) => (
             <div key={i} style={{
               padding: '2px 0',
-              borderLeft: '3px solid #ff4444',
+              borderLeft: '3px solid var(--vscode-inputValidation-errorBorder, #ff4444)',
               paddingLeft: 8,
               marginBottom: 2,
             }}>
-              <strong>Row {err.row + 1}</strong> ({err.key})
-              {err.field && <> → <code style={{ color: '#ffcc00' }}>{err.field}</code></>}
+              <strong>Row {err.row + 2}</strong> ({err.key})
+              {err.field && <> → <code style={{ color: 'var(--vscode-editorWarning-foreground, #ffcc00)' }}>{err.field}</code></>}
               : {err.message}
             </div>
           ))}

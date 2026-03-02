@@ -52,6 +52,9 @@ class JsonEditorProvider {
     // vs. the spurious onChange fired during initial mount.
     let normalizedOriginal = '';
 
+    // Last known valid JSON — invalid rows fall back to this during save.
+    let lastValidJson = null;
+
     /**
      * Reads the TextDocument, converts JSON → sheet data, and
      * posts it to the webview.  Does NOT modify the document.
@@ -66,6 +69,7 @@ class JsonEditorProvider {
         const json = JSON.parse(text);
         // Store a normalized version so we can compare later
         normalizedOriginal = JSON.stringify(json, null, 4);
+        lastValidJson = json;
 
         const result = jsonToSheetData(json);
         typeMap = result.typeMap;
@@ -96,7 +100,7 @@ class JsonEditorProvider {
           loadDocument();
           break;
 
-        // User edited cells → update the TextDocument
+        // User edited cells → validate and partial-save
         case 'edit': {
           const values = msg.values; // 2-D array [row][col]
           try {
@@ -106,36 +110,47 @@ class JsonEditorProvider {
 
             const newText = JSON.stringify(json, null, 4);
 
-            // Compare with normalized original — skip if no real data change.
-            // This prevents the spurious onChange that FortuneSheet fires on
-            // mount from dirtying the document.
+            // Skip if no real data change (spurious FortuneSheet mount onChange).
             if (newText === normalizedOriginal) {
               return;
             }
 
-            // Real change — validate
+            // Validate
             const errors = validateJson(json, jsonStructure);
             currentValidationErrors = errors || [];
             webview.postMessage({
               type: 'validationErrors',
               errors: currentValidationErrors,
-              headers, // send headers so the webview can map field→column
+              headers,
             });
 
-            // Apply the edit to the TextDocument
-            const fullRange = new vscode.Range(
-              document.positionAt(0),
-              document.positionAt(document.getText().length)
-            );
-            const edit = new vscode.WorkspaceEdit();
-            edit.replace(document.uri, fullRange, newText);
+            // ── Partial save: only valid rows are written to the document ──
+            let jsonToSave;
+            if (currentValidationErrors.length > 0 && lastValidJson) {
+              const errorRows = new Set(currentValidationErrors.map(e => e.row));
+              jsonToSave = mergeValidRows(
+                json, lastValidJson, jsonStructure, errorRows, originalKeys
+              );
+            } else {
+              jsonToSave = json;
+            }
 
-            suppressDocChange = true;
-            await vscode.workspace.applyEdit(edit);
-            suppressDocChange = false;
+            const saveText = JSON.stringify(jsonToSave, null, 4);
+            if (saveText !== normalizedOriginal) {
+              const fullRange = new vscode.Range(
+                document.positionAt(0),
+                document.positionAt(document.getText().length)
+              );
+              const edit = new vscode.WorkspaceEdit();
+              edit.replace(document.uri, fullRange, saveText);
 
-            // Update baseline so subsequent no-change edits are also caught
-            normalizedOriginal = newText;
+              suppressDocChange = true;
+              await vscode.workspace.applyEdit(edit);
+              suppressDocChange = false;
+
+              normalizedOriginal = saveText;
+              lastValidJson = jsonToSave;
+            }
           } catch (e) {
             vscode.window.showErrorMessage(`Save error: ${e.message}`);
           }
@@ -144,13 +159,13 @@ class JsonEditorProvider {
       }
     });
 
-    // ── Warn on save if there are validation errors ──
+    // ── Show warning on save if there are validation errors ──
     const willSaveDisposable = vscode.workspace.onWillSaveTextDocument((e) => {
       if (e.document.uri.toString() !== document.uri.toString()) return;
       if (currentValidationErrors.length > 0) {
         vscode.window.showWarningMessage(
-          `⚠️ This file has ${currentValidationErrors.length} validation error(s). ` +
-          'Please review the highlighted rows in the editor.'
+          `⚠️ ${currentValidationErrors.length} row(s) have validation errors and were NOT saved. ` +
+          'Only valid rows were written to the file. Fix the errors in the editor.'
         );
       }
     });
@@ -224,6 +239,29 @@ function _getNonce() {
     nonce += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return nonce;
+}
+
+/**
+ * Merges new JSON with last-valid JSON: valid rows from newJson,
+ * invalid rows (identified by errorRows set) from lastValidJson.
+ */
+function mergeValidRows(newJson, lastValidJson, structure, errorRows) {
+  if (structure === 'array') {
+    return newJson.map((row, idx) =>
+      errorRows.has(idx) ? (lastValidJson[idx] || row) : row
+    );
+  }
+  if (structure === 'object-of-objects') {
+    const result = {};
+    Object.keys(newJson).forEach((key, idx) => {
+      result[key] = errorRows.has(idx)
+        ? (lastValidJson[key] || newJson[key])
+        : newJson[key];
+    });
+    return result;
+  }
+  // 'object' — single row
+  return errorRows.has(0) ? lastValidJson : newJson;
 }
 
 module.exports = { JsonEditorProvider };
